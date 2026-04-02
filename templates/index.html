@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Locker UI</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #1C1F26;
+    color: white;
+    text-align: center;
+    margin-top: 80px;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #88C0D0;
+    cursor: pointer;
+}
+
+.status {
+    margin-top: 30px;
+    font-size: 28px;
+}
+
+.correct { color: #2ecc71; }
+.wrong { color: #e74c3c; }
+.neutral { color: #ccc; }
+</style>
+
+</head>
+<body>
+
+<h1>Locker 3</h1>
+<p>Plaats je item in de locker</p>
+
+<button onclick="checkWeight()">Controleer gewicht</button>
+
+<div id="status" class="status neutral">
+    Wacht op controle...
+</div>
+
+<p>Verwacht: {{ expected }}g</p>
+<p>Gemeten: <span id="actual">--</span></p>
+
+<script>
+function checkWeight() {
+    fetch("/weight")
+    .then(res => res.json())
+    .then(data => {
+        const status = document.getElementById("status");
+
+        status.className = "status " + data.status;
+        status.innerText = data.message;
+
+        document.getElementById("actual").innerText = data.actual;
+    });
+}
+</script>
+
+</body>
+</html>
