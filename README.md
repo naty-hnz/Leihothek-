@@ -1,3 +1,3 @@
 # Leihothek-
-git test
-git test 2
+
+Solution for renting lockers from Leihothek
