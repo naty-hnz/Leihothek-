@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 rfid_items = {
     "103701245": {
@@ -21,34 +23,22 @@ rfid_items = {
 
 @app.route('/')
 def index():
-    return render_template('home.html')
-
-@app.route('/scan', methods=['POST'])
-def scan():
-    data = request.get_json()
-    print("Ontvangen:", data)
-
-    if not data or "tag" not in data:
-        return jsonify({"error": "Geen tag ontvangen"}), 400
-    
-    tag_id = str(data["tag"])
-
-    if tag_id not in rfid_items:
-        return jsonify({"error": "Item niet gevonden"}), 404
-    
-    return jsonify({
-        "status": "success",
-        "redirect_url": f"/item/{tag_id}"
-    })
+    return render_template('scanner.html')
 
 @app.route("/item/<tag_id>")
 def item(tag_id):
     item = rfid_items.get(tag_id)
-
     if not item:
         return "Item niet gevonden"
-    
     return render_template("item.html", item=item)
 
+@app.route('/scan/<tag_id>')
+def scan(tag_id):
+    if tag_id not in rfid_items:
+        return {"error": "Item niet gevonden"}, 404
+
+    socketio.emit('new_scan', {'tag_id': tag_id})
+    return {"status": "success", "redirect_url": f"/item/{tag_id}"}
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
