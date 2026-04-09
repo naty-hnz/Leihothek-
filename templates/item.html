@@ -1,11 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
+    <meta charset="UTF-8">
     <title>{{ item.name }}</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1C1F26;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #2E3440;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #88C0D0;
+            margin-top: 0;
+        }
+
+        img {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            display: block;
+            margin: 15px 0;
+        }
+
+        p {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .dates {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #1C1F26;
+            border-radius: 8px;
+        }
+
+        .dates p {
+            margin: 5px 0;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #88C0D0;
+            color: #1C1F26;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        a:hover {
+            background-color: #5e9fb5;
+        }
+    </style>
 </head>
 <body>
+
+<div class="container">
     <h1>{{ item.name }}</h1>
-    <img src="/static/{{ item.image }}" width="300">
+
+    <img src="{{ url_for('static', filename='images/' + item.image) }}">
+
     <p>{{ item.description }}</p>
+
+    <div class="dates">
+        <p><strong>Start datum:</strong> {{ item.start_date }}</p>
+        <p><strong>Eind datum:</strong> {{ item.end_date }}</p>
+    </div>
+
+    <a href="/">Terug naar catalogus</a>
+</div>
+
 </body>
 </html>
