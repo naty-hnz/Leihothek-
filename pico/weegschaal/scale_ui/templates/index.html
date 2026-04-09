@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scale checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #212126;
+    --border: #2e2e36;
+    --text: #e8e8ee;
+    --muted: #7a7a8c;
+    --accent: #a8ff78;
+    --accent-dim: rgba(168,255,120,0.12);
+    --red: #ff6b6b;
+    --red-dim: rgba(255,107,107,0.12);
+    --mono: 'Roboto', monospace;
+    --sans: 'Roboto', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .conn-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); color: #0f0f11; border-color: var(--accent); font-weight: 500; }
+  button.primary:hover { opacity: 0.85; color: #0f0f11; }
+  button.danger { border-color: transparent; background: transparent; color: var(--muted); padding: 2px 6px; font-size: 11px; }
+  button.danger:hover { color: var(--red); border-color: transparent; }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.err { background: var(--red); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+  }
+
+  .product-list::-webkit-scrollbar { width: 4px; }
+  .product-list::-webkit-scrollbar-track { background: transparent; }
+  .product-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .product-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .product-item:hover { background: var(--surface2); border-color: var(--border); }
+  .product-item.selected { background: var(--accent-dim); border-color: rgba(168,255,120,0.3); }
+
+  .product-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .product-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* Add product form */
+  .add-form {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .add-form-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .add-form input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+
+  .add-form input:focus { border-color: var(--accent); }
+  .add-form input::placeholder { color: var(--muted); }
+
+  .add-form-row { display: flex; gap: 6px; }
+  .add-form-row input { flex: 1; }
+
+  .add-form-feedback {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    min-height: 16px;
+  }
+
+  /* Weight display */
+  .weight-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .weight-display {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 8px 0 20px;
+  }
+
+  .weight-number {
+    font-family: var(--mono);
+    font-size: 72px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.3s;
+    letter-spacing: -2px;
+  }
+
+  .weight-unit {
+    font-family: var(--mono);
+    font-size: 20px;
+    color: var(--muted);
+  }
+
+  .weight-meta {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .weight-meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .weight-meta-label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .weight-meta-value { font-family: var(--mono); font-size: 18px; color: var(--text); }
+
+  .status-banner {
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .status-banner.match { background: var(--accent-dim); color: var(--accent); border-color: rgba(168,255,120,0.3); }
+  .status-banner.nomatch { background: var(--red-dim); color: var(--red); border-color: rgba(255,107,107,0.3); }
+
+  .log-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+  }
+  .log-btn:hover { opacity: 1; border-color: currentColor; }
+
+  .log-card { margin-top: 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 0 12px 10px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr { border-bottom: 1px solid rgba(46,46,54,0.5); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td { padding: 10px 12px; color: var(--text); }
+  td.match-cell { font-weight: 500; }
+  td.yes { color: var(--accent); }
+  td.no { color: var(--red); }
+
+  .empty-log {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  #conn-status { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Leihothek<span>_</span>Scale</div>
+  <div class="conn-bar">
+    <select id="port-select"><option value="">— select port —</option></select>
+    <button onclick="refreshPorts()">refresh</button>
+    <button class="primary" id="conn-btn" onclick="toggleConnect()">connect</button>
+    <div class="dot" id="conn-dot"></div>
+    <span id="conn-status">not connected</span>
+  </div>
+</header>
+
+<div class="grid">
+  <!-- Products -->
+  <div class="card">
+    <div class="card-label">Products</div>
+    <div class="product-list" id="product-list">
+      <div class="empty-log">No products yet</div>
+    </div>
+
+    <!-- Add product form -->
+    <div class="add-form">
+      <div class="add-form-title">Add product</div>
+      <input type="text" id="add-name" placeholder="Product name">
+      <div class="add-form-row">
+        <input type="number" id="add-expected" placeholder="Expected (g)" min="0" step="0.1">
+        <input type="number" id="add-tolerance" placeholder="Tolerance (g)" min="0" step="0.1">
+      </div>
+      <button class="primary" onclick="addProduct()">add</button>
+      <div class="add-form-feedback" id="add-feedback"></div>
+    </div>
+  </div>
+
+  <!-- Weight -->
+  <div class="card weight-card">
+    <div class="card-label">Live weight</div>
+    <div class="weight-display">
+      <div class="weight-number" id="weight-display">---</div>
+      <div class="weight-unit">g</div>
+    </div>
+    <div class="weight-meta">
+      <div class="weight-meta-item">
+        <span class="weight-meta-label">Expected</span>
+        <span class="weight-meta-value" id="expected-val">--- g</span>
+      </div>
+      <div class="weight-meta-item">
+        <span class="weight-meta-label">Tolerance</span>
+        <span class="weight-meta-value" id="tolerance-val">± --- g</span>
+      </div>
+      <div class="weight-meta-item">
+        <span class="weight-meta-label">Difference</span>
+        <span class="weight-meta-value" id="diff-val">--- g</span>
+      </div>
+    </div>
+    <div class="status-banner" id="status-banner">
+      <span id="status-text">Select a product to start checking</span>
+      <button class="log-btn" id="log-btn" onclick="logMeasurement()" style="display:none">log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log -->
+<div class="card log-card">
+  <div class="card-label">Measurement log</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th><th>Product</th><th>Expected (g)</th><th>Measured (g)</th><th>Diff (g)</th><th>Result</th>
+      </tr>
+    </thead>
+    <tbody id="log-body">
+      <tr><td colspan="6" class="empty-log">No measurements yet</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  let selectedProduct = null;
+  let currentWeight = 0;
+  let connected = false;
+  let pollInterval = null;
+
+  refreshPorts();
+  loadProducts();
+  loadLog();
+
+  async function refreshPorts() {
+    const res = await fetch('/api/ports');
+    const ports = await res.json();
+    const sel = document.getElementById('port-select');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— select port —</option>';
+    ports.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      if (p === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function toggleConnect() {
+    if (connected) {
+      await fetch('/api/disconnect', { method: 'POST' });
+      stopPolling();
+      setConnected(false);
+    } else {
+      const port = document.getElementById('port-select').value;
+      if (!port) { alert('Please select a port first.'); return; }
+      const res = await fetch('/api/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port })
+      });
+      const data = await res.json();
+      if (data.connected) { setConnected(true); startPolling(); }
+      else {
+        document.getElementById('conn-status').textContent = data.error || 'failed';
+        document.getElementById('conn-dot').className = 'dot err';
+      }
+    }
+  }
+
+  function setConnected(on) {
+    connected = on;
+    document.getElementById('conn-dot').className = 'dot' + (on ? ' on' : '');
+    document.getElementById('conn-status').textContent = on ? 'connected' : 'not connected';
+    document.getElementById('conn-btn').textContent = on ? 'disconnect' : 'connect';
+  }
+
+  function startPolling() {
+    pollInterval = setInterval(async () => {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      if (!data.connected && connected) { setConnected(false); stopPolling(); return; }
+      currentWeight = data.weight;
+      document.getElementById('weight-display').textContent = data.weight.toFixed(1);
+      updateStatus();
+    }, 500);
+  }
+
+  function stopPolling() {
+    clearInterval(pollInterval);
+    document.getElementById('weight-display').textContent = '---';
+  }
+
+  async function loadProducts() {
+    const res = await fetch('/api/products');
+    const products = await res.json();
+    const list = document.getElementById('product-list');
+    if (!products.length) {
+      list.innerHTML = '<div class="empty-log">No products yet</div>';
+      return;
+    }
+    list.innerHTML = products.map(p => `
+      <div class="product-item" id="pi-${CSS.escape(p.name)}" onclick="selectProduct(${JSON.stringify(p).replace(/"/g, '&quot;')}, event)">
+        <div class="product-info">
+          <span class="product-name">${p.name}</span>
+          <span class="product-meta">${p.expected}g &nbsp;±${p.tolerance}g</span>
+        </div>
+        <button class="danger" onclick="deleteProduct('${p.name.replace(/'/g, "\\'")}', event)">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function selectProduct(p, e) {
+    if (e.target.classList.contains('danger')) return;
+    selectedProduct = p;
+    document.querySelectorAll('.product-item').forEach(el => el.classList.remove('selected'));
+    e.currentTarget.classList.add('selected');
+    document.getElementById('expected-val').textContent = p.expected + ' g';
+    document.getElementById('tolerance-val').textContent = '± ' + p.tolerance + ' g';
+    updateStatus();
+  }
+
+  async function addProduct() {
+    const name = document.getElementById('add-name').value.trim();
+    const expected = parseFloat(document.getElementById('add-expected').value);
+    const tolerance = parseFloat(document.getElementById('add-tolerance').value);
+    const feedback = document.getElementById('add-feedback');
+
+    if (!name || isNaN(expected) || isNaN(tolerance)) {
+      feedback.style.color = 'var(--red)';
+      feedback.textContent = '✗ fill in all fields';
+      return;
+    }
+
+    const res = await fetch('/api/products/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, expected, tolerance })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      feedback.style.color = 'var(--accent)';
+      feedback.textContent = `✓ "${name}" added`;
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-expected').value = '';
+      document.getElementById('add-tolerance').value = '';
+      loadProducts();
+      setTimeout(() => feedback.textContent = '', 3000);
+    } else {
+      feedback.style.color = 'var(--red)';
+      feedback.textContent = '✗ ' + data.error;
+    }
+  }
+
+  async function deleteProduct(name, e) {
+    e.stopPropagation();
+    if (!confirm(`Delete "${name}"?`)) return;
+    await fetch('/api/products/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (selectedProduct && selectedProduct.name === name) {
+      selectedProduct = null;
+      document.getElementById('expected-val').textContent = '--- g';
+      document.getElementById('tolerance-val').textContent = '± --- g';
+      updateStatus();
+    }
+    loadProducts();
+  }
+
+  function updateStatus() {
+    const banner = document.getElementById('status-banner');
+    const text = document.getElementById('status-text');
+    const logBtn = document.getElementById('log-btn');
+    const diffEl = document.getElementById('diff-val');
+
+    if (!selectedProduct) {
+      banner.className = 'status-banner';
+      text.textContent = 'Select a product to start checking';
+      logBtn.style.display = 'none';
+      diffEl.textContent = '--- g';
+      return;
+    }
+
+    const diff = currentWeight - selectedProduct.expected;
+    const absDiff = Math.abs(diff);
+    diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' g';
+
+    if (absDiff <= selectedProduct.tolerance) {
+      banner.className = 'status-banner match';
+      text.textContent = '✓  weight matches';
+    } else {
+      const dir = diff > 0 ? 'too heavy' : 'too light';
+      banner.className = 'status-banner nomatch';
+      text.textContent = `✗  ${dir} by ${absDiff.toFixed(1)} g`;
+    }
+    logBtn.style.display = 'inline-block';
+  }
+
+  async function logMeasurement() {
+    if (!selectedProduct) return;
+    const match = Math.abs(currentWeight - selectedProduct.expected) <= selectedProduct.tolerance;
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product: selectedProduct.name, expected: selectedProduct.expected, measured: currentWeight, match })
+    });
+    loadLog();
+  }
+
+  async function loadLog() {
+    const res = await fetch('/api/measurements');
+    const rows = await res.json();
+    const body = document.getElementById('log-body');
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" class="empty-log">No measurements yet</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(r => {
+      const diff = (r.measured - r.expected).toFixed(1);
+      const diffStr = diff >= 0 ? '+' + diff : diff;
+      return `<tr>
+        <td>${r.time.split(' ')[1] || r.time}</td>
+        <td>${r.product}</td>
+        <td>${r.expected.toFixed(1)}</td>
+        <td>${r.measured.toFixed(1)}</td>
+        <td>${diffStr}</td>
+        <td class="match-cell ${r.match ? 'yes' : 'no'}">${r.match ? '✓ match' : '✗ no match'}</td>
+      </tr>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>
