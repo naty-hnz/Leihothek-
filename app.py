@@ -1,25 +1,15 @@
 from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
+from models import db, Items
 
 app = Flask(__name__)
-socketio = SocketIO(app)
 
-rfid_items = {
-    "103701245": {
-        "name": "Bohrmaschine",
-        "image": "boormachine.jpg",
-        "description": "Elektrische Bohrmaschine",
-        "start_date": "2026-04-01",
-        "end_date": "2026-04-07"
-    },
-    "91141454": {
-        "name": "UNO",
-        "image": "uno.jpg",
-        "description": "Kartenspiel",
-        "start_date": "2026-04-02",
-        "end_date": "2026-04-09"
-    }
-}
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///items.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+socketio = SocketIO(app)
 
 @app.route('/')
 def index():
@@ -27,14 +17,18 @@ def index():
 
 @app.route("/item/<tag_id>")
 def item(tag_id):
-    item = rfid_items.get(tag_id)
+    item = Items.query.filter_by(rfid=int(tag_id)).first()
+
     if not item:
         return "Item niet gevonden"
+
     return render_template("item.html", item=item)
 
 @app.route('/scan/<tag_id>')
 def scan(tag_id):
-    if tag_id not in rfid_items:
+    item = Items.query.filter_by(rfid=int(tag_id)).first()
+
+    if not item:
         return {"error": "Item niet gevonden"}, 404
 
     socketio.emit('new_scan', {'tag_id': tag_id})

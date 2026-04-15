@@ -12,6 +12,11 @@
             margin: 0;
             padding: 20px;
         }
+        h1 {
+            color: #88C0D0;
+            margin-top: 0;
+            text-align: center;
+        }
 
         .container {
             max-width: 800px;
@@ -67,14 +72,12 @@
         }
     </style>
 <body>
-    <h1>Wacht op RFID scan...</h1>
-
+    <h1>Wacht op scan...</h1>
     <script>
         const socket = io();
 
         socket.on('new_scan', function(data) {
-            console.log("Nieuwe scan:", data);
-            window.location.href = `/item/${data.tag_id}`;
+            window.location.href = "/item/" + data.tag_id;
         });
     </script>
 </body>

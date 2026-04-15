@@ -68,21 +68,14 @@
     </style>
 </head>
 <body>
-
-<div class="container">
     <h1>{{ item.name }}</h1>
+    
+    <img src="{{ url_for('static', filename='images/' + item.image) }}" alt="{{ item.name }}">
+    <p>RFID: {{ item.rfid }}</p>
+    <p>Gewicht: {{ item.weight }}</p>
+    <p>Min gewicht: {{ item.weight_min }}</p>
+    <p>Max gewicht: {{ item.weight_max }}</p>
 
-    <img src="{{ url_for('static', filename='images/' + item.image) }}">
-
-    <p>{{ item.description }}</p>
-
-    <div class="dates">
-        <p><strong>Start datum:</strong> {{ item.start_date }}</p>
-        <p><strong>Eind datum:</strong> {{ item.end_date }}</p>
-    </div>
-
-    <a href="/">Terug naar catalogus</a>
-</div>
-
+    <a href="/">Terug</a>
 </body>
 </html>
