@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Locker admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f11; --surface: #18181c; --surface2: #212126; --border: #2e2e36;
+  --text: #e8e8ee; --muted: #7a7a8c;
+  --green: #a8ff78; --green-dim: rgba(168,255,120,0.12);
+  --red: #ff6b6b;   --red-dim: rgba(255,107,107,0.12);
+  --amber: #ffc966; --amber-dim: rgba(255,201,102,0.12);
+  --blue: #78b4ff;  --blue-dim: rgba(120,180,255,0.12);
+  --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; padding: 28px 24px; }
+
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.logo { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.logo span { color: var(--green); }
+.live-weight { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.live-weight b { color: var(--text); font-size: 20px; }
+
+.top-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.stat-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-family: var(--mono); font-size: 28px; font-weight: 500; }
+.stat-value.green { color: var(--green); }
+.stat-value.red   { color: var(--red); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.blue  { color: var(--blue); }
+
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+
+/* Locker cards */
+.locker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.locker-card {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.2s;
+}
+.locker-card.SUCCESS_RETURNED { border-color: rgba(168,255,120,0.4); background: var(--green-dim); }
+.locker-card.FAILED_RETURN    { border-color: rgba(255,107,107,0.4); background: var(--red-dim); }
+.locker-card.OPEN             { border-color: rgba(255,201,102,0.4); background: var(--amber-dim); }
+.locker-card.CLOSED           { border-color: var(--border); }
+
+.locker-top { display: flex; align-items: center; justify-content: space-between; }
+.locker-name { font-size: 15px; font-weight: 500; }
+.status-pill {
+  font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 20px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.pill-SUCCESS_RETURNED { background: var(--green-dim); color: var(--green); }
+.pill-FAILED_RETURN    { background: var(--red-dim);   color: var(--red); }
+.pill-OPEN             { background: var(--amber-dim); color: var(--amber); }
+.pill-CLOSED           { background: var(--surface);   color: var(--muted); border: 1px solid var(--border); }
+
+.locker-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.1em; }
+.meta-value { font-family: var(--mono); font-size: 14px; }
+
+.weight-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.weight-bar { height: 100%; border-radius: 2px; transition: width 0.4s, background 0.3s; }
+
+.locker-actions { display: flex; gap: 6px; }
+
+.notification {
+  padding: 10px 14px; border-radius: 8px; font-family: var(--mono); font-size: 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.notification.success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(168,255,120,0.25); }
+.notification.failure { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,107,107,0.25); }
+.notif-time { font-size: 10px; opacity: 0.7; }
+#notifications { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+
+/* Add locker form */
+.add-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.add-form input, .add-form select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 7px 10px; border-radius: 6px;
+  outline: none; transition: border-color 0.15s; flex: 1; min-width: 110px;
+}
+.add-form input:focus { border-color: var(--green); }
+.add-form input::placeholder { color: var(--muted); }
+
+button {
+  font-family: var(--mono); font-size: 12px; padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em; white-space: nowrap;
+}
+button:hover { border-color: var(--green); color: var(--green); }
+button.primary { background: var(--green); color: #0f0f11; border-color: var(--green); font-weight: 500; }
+button.primary:hover { opacity: 0.85; color: #0f0f11; }
+button.sm { padding: 4px 8px; font-size: 11px; }
+button.danger { color: var(--muted); border-color: transparent; background: transparent; }
+button.danger:hover { color: var(--red); border-color: transparent; }
+
+/* Edit modal */
+.modal-backdrop {
+  min-height: 400px; background: rgba(0,0,0,0.7); display: flex;
+  align-items: center; justify-content: center; border-radius: 12px; padding: 20px;
+}
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 400px; }
+.modal-title { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 16px; }
+.modal-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.modal-field label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.modal-field input {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 13px; padding: 8px 10px; border-radius: 6px; outline: none;
+}
+.modal-field input:focus { border-color: var(--green); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* Event log table */
+table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+thead th { text-align: left; padding: 0 10px 10px; color: var(--muted); font-weight: 400; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+tbody tr { border-bottom: 1px solid rgba(46,46,54,0.5); }
+tbody tr:hover { background: var(--surface2); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 8px 10px; }
+td.ok   { color: var(--green); font-weight: 500; }
+td.fail { color: var(--red);   font-weight: 500; }
+td.warn { color: var(--amber); font-weight: 500; }
+.empty { text-align: center; padding: 28px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">locker<span>_</span>admin</div>
+  <div class="live-weight">live weight: <b id="live-w">—</b> g &nbsp;<span id="live-time" style="font-size:11px;color:var(--muted)"></span></div>
+</header>
+
+<!-- Stats -->
+<div class="top-grid">
+  <div class="stat-card"><div class="stat-label">Total lockers</div><div class="stat-value blue" id="s-total">—</div></div>
+  <div class="stat-card"><div class="stat-label">Successfully returned</div><div class="stat-value green" id="s-ok">—</div></div>
+  <div class="stat-card"><div class="stat-label">Failed return</div><div class="stat-value red" id="s-fail">—</div></div>
+  <div class="stat-card"><div class="stat-label">Currently open</div><div class="stat-value amber" id="s-open">—</div></div>
+</div>
+
+<!-- Notifications -->
+<div class="section" id="notif-section">
+  <div class="section-header">
+    <div class="section-title">Notifications</div>
+    <button class="sm" onclick="clearNotifications()">clear</button>
+  </div>
+  <div id="notifications"><div class="empty" style="padding:12px">No notifications yet</div></div>
+</div>
+
+<!-- Lockers -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Lockers</div>
+    <button class="sm primary" onclick="showAddForm()">+ add locker</button>
+  </div>
+
+  <div id="add-form-wrap" style="display:none;margin-bottom:16px;">
+    <div class="add-form">
+      <input type="text"   id="a-name"      placeholder="Locker name">
+      <input type="text"   id="a-tag"       placeholder="Tag ID">
+      <input type="number" id="a-expected"  placeholder="Expected (g)" min="0" step="0.1">
+      <input type="number" id="a-tolerance" placeholder="Tolerance (g)" min="0" step="0.1" value="30">
+      <button class="primary" onclick="addLocker()">add</button>
+      <button onclick="hideAddForm()">cancel</button>
+    </div>
+    <div id="add-feedback" style="font-family:var(--mono);font-size:11px;margin-top:6px;color:var(--muted)"></div>
+  </div>
+
+  <div class="locker-grid" id="locker-grid"><div class="empty">No lockers configured yet</div></div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-modal" style="display:none">
+  <div class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-title">Edit locker</div>
+      <input type="hidden" id="e-id">
+      <div class="modal-field"><label>Name</label><input type="text" id="e-name"></div>
+      <div class="modal-field"><label>Tag ID</label><input type="text" id="e-tag"></div>
+      <div class="modal-field"><label>Expected weight (g)</label><input type="number" id="e-expected" min="0" step="0.1"></div>
+      <div class="modal-field"><label>Tolerance (g)</label><input type="number" id="e-tolerance" min="0" step="0.1"></div>
+      <div class="modal-actions">
+        <button onclick="hideEdit()">cancel</button>
+        <button class="primary" onclick="saveEdit()">save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event log -->
+<div class="section">
+  <div class="section-header"><div class="section-title">Event log</div></div>
+  <table>
+    <thead><tr><th>Time</th><th>Locker</th><th>Event</th><th>Tag</th><th>Weight (g)</th><th>Expected (g)</th><th>Result</th></tr></thead>
+    <tbody id="event-body"><tr><td colspan="7" class="empty">No events yet</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+  const notifications = [];
+  let prevStatuses = {};
+
+  setInterval(loadAll, 1000);
+  loadAll();
+  setInterval(loadEvents, 5000);
+  loadEvents();
+
+  async function loadAll() {
+    const res = await fetch('/api/status');
+    const d   = await res.json();
+
+    document.getElementById('live-w').textContent    = d.weight != null ? d.weight.toFixed(1) : '—';
+    document.getElementById('live-time').textContent = d.last_update ? d.last_update : '';
+
+    const ls = d.lockers || [];
+    document.getElementById('s-total').textContent = ls.length;
+    document.getElementById('s-ok').textContent    = ls.filter(l => l.status === 'SUCCESS_RETURNED').length;
+    document.getElementById('s-fail').textContent  = ls.filter(l => l.status === 'FAILED_RETURN').length;
+    document.getElementById('s-open').textContent  = ls.filter(l => l.status === 'OPEN').length;
+
+    // Check for status changes → notifications
+    ls.forEach(l => {
+      const prev = prevStatuses[l.id];
+      if (prev && prev !== l.status) {
+        if (l.status === 'SUCCESS_RETURNED') pushNotif('success', `${l.name}: item successfully returned (${l.current.toFixed(1)}g)`);
+        if (l.status === 'FAILED_RETURN')    pushNotif('failure', `${l.name}: item failed to be returned — got ${l.current.toFixed(1)}g, expected ${l.expected.toFixed(1)}g`);
+      }
+      prevStatuses[l.id] = l.status;
+    });
+
+    renderLockers(ls);
+  }
+
+  function renderLockers(ls) {
+    const grid = document.getElementById('locker-grid');
+    if (!ls.length) { grid.innerHTML = '<div class="empty">No lockers configured yet</div>'; return; }
+    grid.innerHTML = ls.map(l => {
+      const pct = l.expected > 0 ? Math.min(100, (l.current / l.expected) * 100) : 0;
+      const barColor = l.status === 'SUCCESS_RETURNED' ? 'var(--green)' : l.status === 'FAILED_RETURN' ? 'var(--red)' : 'var(--amber)';
+      return `
+      <div class="locker-card ${l.status}">
+        <div class="locker-top">
+          <div class="locker-name">${l.name}</div>
+          <div class="status-pill pill-${l.status}">${l.status.replace(/_/g,' ').toLowerCase()}</div>
+        </div>
+        <div class="locker-meta">
+          <div class="meta-item"><div class="meta-label">Current</div><div class="meta-value">${l.current != null ? l.current.toFixed(1) : '—'} g</div></div>
+          <div class="meta-item"><div class="meta-label">Expected</div><div class="meta-value">${l.expected.toFixed(1)} g</div></div>
+          <div class="meta-item"><div class="meta-label">Tolerance</div><div class="meta-value">± ${l.tolerance.toFixed(1)} g</div></div>
+          <div class="meta-item"><div class="meta-label">Tag ID</div><div class="meta-value" style="font-size:11px;color:var(--muted)">${l.tag_id || '—'}</div></div>
+        </div>
+        <div class="weight-bar-wrap">
+          <div class="weight-bar" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        <div class="locker-actions">
+          <button class="sm" onclick="editLocker(${l.id},'${l.name}','${l.tag_id||''}',${l.expected},${l.tolerance})">edit</button>
+          <button class="sm" onclick="resetStatus(${l.id})">reset</button>
+          <button class="sm danger" onclick="deleteLocker(${l.id},'${l.name}')">delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function pushNotif(type, msg) {
+    notifications.unshift({type, msg, time: new Date().toLocaleTimeString()});
+    if (notifications.length > 20) notifications.pop();
+    renderNotifications();
+  }
+
+  function renderNotifications() {
+    const el = document.getElementById('notifications');
+    if (!notifications.length) { el.innerHTML = '<div class="empty" style="padding:12px">No notifications yet</div>'; return; }
+    el.innerHTML = notifications.map(n => `
+      <div class="notification ${n.type}">
+        <span>${n.type === 'success' ? '✓' : '✗'} &nbsp;${n.msg}</span>
+        <span class="notif-time">${n.time}</span>
+      </div>`).join('');
+  }
+
+  function clearNotifications() {
+    notifications.length = 0;
+    renderNotifications();
+  }
+
+  function showAddForm() { document.getElementById('add-form-wrap').style.display = 'block'; }
+  function hideAddForm() { document.getElementById('add-form-wrap').style.display = 'none'; }
+
+  async function addLocker() {
+    const name      = document.getElementById('a-name').value.trim();
+    const tag_id    = document.getElementById('a-tag').value.trim();
+    const expected  = parseFloat(document.getElementById('a-expected').value);
+    const tolerance = parseFloat(document.getElementById('a-tolerance').value);
+    const fb = document.getElementById('add-feedback');
+    if (!name || isNaN(expected)) { fb.style.color='var(--red)'; fb.textContent='✗ Name and expected weight are required.'; return; }
+    const res = await fetch('/api/lockers/add', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, tag_id, expected, tolerance: isNaN(tolerance) ? 30 : tolerance})
+    });
+    const d = await res.json();
+    if (d.ok) {
+      fb.style.color='var(--green)'; fb.textContent='✓ Locker added';
+      ['a-name','a-tag','a-expected'].forEach(id => document.getElementById(id).value='');
+      hideAddForm(); loadAll();
+    } else { fb.style.color='var(--red)'; fb.textContent='✗ '+d.error; }
+  }
+
+  function editLocker(id, name, tag, expected, tolerance) {
+    document.getElementById('e-id').value        = id;
+    document.getElementById('e-name').value      = name;
+    document.getElementById('e-tag').value       = tag;
+    document.getElementById('e-expected').value  = expected;
+    document.getElementById('e-tolerance').value = tolerance;
+    document.getElementById('edit-modal').style.display = 'block';
+  }
+
+  function hideEdit() { document.getElementById('edit-modal').style.display = 'none'; }
+
+  async function saveEdit() {
+    const d = {
+      id:        parseInt(document.getElementById('e-id').value),
+      name:      document.getElementById('e-name').value.trim(),
+      tag_id:    document.getElementById('e-tag').value.trim(),
+      expected:  parseFloat(document.getElementById('e-expected').value),
+      tolerance: parseFloat(document.getElementById('e-tolerance').value),
+    };
+    const res = await fetch('/api/lockers/update', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d)
+    });
+    const r = await res.json();
+    if (r.ok) { hideEdit(); loadAll(); }
+  }
+
+  async function deleteLocker(id, name) {
+    if (!confirm(`Delete locker "${name}"?`)) return;
+    await fetch('/api/lockers/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+    loadAll();
+  }
+
+  async function resetStatus(id) {
+    await fetch('/api/lockers/reset_status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+    loadAll();
+  }
+
+  async function loadEvents() {
+    const res  = await fetch('/api/events');
+    const rows = await res.json();
+    const body = document.getElementById('event-body');
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="empty">No events yet</td></tr>'; return; }
+    const cls = r => {
+      if (!r) return '';
+      if (r.includes('success') || r.includes('ok') || r.includes('checkout')) return 'ok';
+      if (r.includes('fail') || r.includes('wrong') || r.includes('unknown')) return 'fail';
+      return 'warn';
+    };
+    body.innerHTML = rows.map(r => `<tr>
+      <td>${r.time ? r.time.split(' ')[1] || r.time : '—'}</td>
+      <td>${r.locker || '—'}</td>
+      <td>${r.event  || '—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.tag_id || '—'}</td>
+      <td>${r.weight   != null ? r.weight.toFixed(1)   : '—'}</td>
+      <td>${r.expected != null ? r.expected.toFixed(1) : '—'}</td>
+      <td class="${cls(r.result)}">${r.result || '—'}</td>
+    </tr>`).join('');
+  }
+</script>
+</body>
+</html>
